@@ -26,6 +26,10 @@ def load_data():
 			question1.append(question1_words)
 			question2.append(question2_words)
 			is_duplicate.append(row['is_duplicate'])
+	zipped_object = zip(question1,question2,is_duplicate)
+	with open('stemmed_split_sentences','w') as myfile:
+		json.dump(zipped_object,myfile)
+	
 	return zip(question1,question2,is_duplicate)
 def clean_text(text):
 	text = re.sub(r"[^A-Za-z0-9^,!.\/'+-=]", " ", text)
