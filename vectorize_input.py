@@ -111,6 +111,10 @@ def vectorize():
 		if example_counter % 10 == 0:
 			print 'NUMBER OF EXAMPLES DONE === ' + str(example_counter)
 			print 'TOTAL NUMBER OF SHIT    === ' + str(number_of_examples) 
+		if example_counter % 2000 == 0 :
+			np.save('q1_ids_matrix',question_one_ids)
+			np.save('q2_ids_matrix',question_two_ids)
+
 		wordcounter = 0
 	np.save('q1_ids_matrix',question_one_ids)
 	np.save('q2_ids_matrix',question_two_ids)	

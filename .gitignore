@@ -5,3 +5,5 @@ wordlist
 q1.npy
 q2.npy
 stemmed_split_sentences
+q1_ids_matrix.npy
+q2_ids_matrix.npy
