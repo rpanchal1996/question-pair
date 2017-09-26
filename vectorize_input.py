@@ -61,9 +61,7 @@ def vectorize():
 		wordlist = myfile.readlines()
 		wordlist = [word.lower().strip() for word in wordlist]
 	zipped_data = load_data()
-	print len(zipped_data)
-	number_of_examples = len(zipped_data)
-	
+	number_of_examples = len(zipped_data)	
 	question_one_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')
 	question_two_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')
 	example_counter = 0
@@ -74,6 +72,8 @@ def vectorize():
 		question2_words = question2_cleaned.split()
 		question1_words = [ps.stem(word) for word in question1_words]
 		question2_words = [ps.stem(word) for word in question2_words]
+		print question1_words
+		print question2_words
 		wordcounter = 0
 		for word in question1_words:
 			try:
@@ -95,11 +95,21 @@ def vectorize():
 				wordcounter+=1
 				unkown+=1
 		example_counter+=1
+		
 		wordcounter = 0
 	np.save('q1',question_one_ids)
 	np.save('q2',question_two_ids)	
 	print known
 	print unkown
 
-vectorize()
-
+#vectorize()
+def check_saved_id_matrix():
+	zipped_data = load_data()
+	for question1,question2,is_duplicate in zipped_data[1:2]:
+		print question1
+		print question2
+	question_one_ids = np.load('q1.npy')
+	question_two_ids = np.load('q2.npy')
+	print question_one_ids[0]
+	print question_two_ids[0]
+check_saved_id_matrix()

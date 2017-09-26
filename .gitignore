@@ -2,3 +2,5 @@ stemmed_vectors
 final_clean_vectors
 final_vectors
 wordlist
+q1.npy
+q2.npy
