@@ -2,8 +2,14 @@ import pandas as pd
 from nltk.stem.porter import PorterStemmer
 import re
 import numpy as np
+import json
 maxSeqLength = 30
 ps = PorterStemmer()
+def load_data_saved():
+	with open('stemmed_split_sentences','r') as myfile:
+		data = json.load(myfile)
+	return data
+
 def load_data():
 	file_path = '/home/rudresh/Desktop/quora/train.csv'
 	csv_dataframe  = pd.read_csv(file_path)
@@ -70,7 +76,7 @@ def vectorize():
 	with open('wordlist','r') as myfile:
 		wordlist = myfile.readlines()
 		wordlist = [word.lower().strip() for word in wordlist]
-	zipped_data = load_data()
+	zipped_data = load_data_saved()
 	number_of_examples = len(zipped_data)	
 	question_one_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')
 	question_two_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')

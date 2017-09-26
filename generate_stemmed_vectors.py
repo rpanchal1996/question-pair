@@ -53,4 +53,3 @@ def generate_word_list(filename_of_vectors):
 		word = vector.split()[0] + '\n'
 		with open('wordlist','a') as myfile:
 			myfile.write(word)
-generate_word_list('final_clean_vectors')
