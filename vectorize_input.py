@@ -84,14 +84,6 @@ def vectorize():
 	example_counter = 0
 	
 	for question1_words,question2_words,is_duplicate in zipped_data:
-		'''
-		question1_cleaned = clean_text(question1.lower())
-		question2_cleaned = clean_text(question2.lower())
-		question1_words = question1_cleaned.split()
-		question2_words = question2_cleaned.split()
-		question1_words = [ps.stem(word) for word in question1_words]
-		question2_words = [ps.stem(word) for word in question2_words]
-		'''
 		wordcounter = 0
 		print question1_words
 		print question2_words
