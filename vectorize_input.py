@@ -14,11 +14,17 @@ def load_data():
 	for index, row in csv_dataframe.iterrows():
 		q1 = str(row['question1'])
 		q2 = str(row['question2'])
-		if len(q1.split())>30 or len(q2.split())>30:
+		question1_cleaned = clean_text(q1.lower())
+		question2_cleaned = clean_text(q2.lower())
+		question1_words = question1_cleaned.split()
+		question2_words = question2_cleaned.split()
+		question1_words = [ps.stem(word) for word in question1_words]
+		question2_words = [ps.stem(word) for word in question2_words]
+		if len(question1_words)>30 or len(question2_words)>30:
 			pass
 		else:
-			question1.append(q1.lower())
-			question2.append(q2.lower())
+			question1.append(question1_words)
+			question2.append(question2_words)
 			is_duplicate.append(row['is_duplicate'])
 	return zip(question1,question2,is_duplicate)
 def clean_text(text):
@@ -64,17 +70,22 @@ def vectorize():
 	number_of_examples = len(zipped_data)	
 	question_one_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')
 	question_two_ids = np.zeros((number_of_examples, maxSeqLength), dtype='int32')
+	is_duplicate = np.zeros((number_of_examples,1),dtype = 'int32')
 	example_counter = 0
-	for question1,question2,is_duplicate in zipped_data[1:20]:
+	
+	for question1_words,question2_words,is_duplicate in zipped_data:
+		'''
 		question1_cleaned = clean_text(question1.lower())
 		question2_cleaned = clean_text(question2.lower())
 		question1_words = question1_cleaned.split()
 		question2_words = question2_cleaned.split()
 		question1_words = [ps.stem(word) for word in question1_words]
 		question2_words = [ps.stem(word) for word in question2_words]
+		'''
+		wordcounter = 0
 		print question1_words
 		print question2_words
-		wordcounter = 0
+		print example_counter
 		for word in question1_words:
 			try:
 				question_one_ids[example_counter][wordcounter] = wordlist.index(word)
@@ -95,14 +106,15 @@ def vectorize():
 				wordcounter+=1
 				unkown+=1
 		example_counter+=1
-		
+		if example_counter % 10 == 0:
+			print 'NUMBER OF EXAMPLES DONE === ' + str(example_counter)
+			print 'TOTAL NUMBER OF SHIT    === ' + str(number_of_examples) 
 		wordcounter = 0
-	np.save('q1',question_one_ids)
-	np.save('q2',question_two_ids)	
+	np.save('q1_ids_matrix',question_one_ids)
+	np.save('q2_ids_matrix',question_two_ids)	
 	print known
 	print unkown
 
-#vectorize()
 def check_saved_id_matrix():
 	zipped_data = load_data()
 	for question1,question2,is_duplicate in zipped_data[1:2]:
@@ -112,4 +124,5 @@ def check_saved_id_matrix():
 	question_two_ids = np.load('q2.npy')
 	print question_one_ids[0]
 	print question_two_ids[0]
-check_saved_id_matrix()
+
+vectorize()
