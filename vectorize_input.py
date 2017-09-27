@@ -131,4 +131,25 @@ def check_saved_id_matrix():
 	print question_one_ids[0]
 	print question_two_ids[0]
 
-vectorize()
+#vectorize()
+
+def generate_target_values_array():
+	zipped_object = load_data_saved()
+	number_of_examples = len(zipped_object)
+	is_same_matrix = np.zeros((number_of_examples,1), dtype='int32')
+	example_counter = 0
+	for _,_,is_duplicate in zipped_object:
+		is_same_matrix[example_counter] = int(is_duplicate)
+		example_counter += 1 
+	np.save('is_same_matrix',is_same_matrix)
+
+
+def load_target_values_array():
+	zipped_object = load_data_saved()
+	is_same_matrix = np.load('is_same_matrix.npy')
+	print np.sum(is_same_matrix)
+	is_duplicate_count = 0
+	for _,_,is_duplicate in zipped_object:
+		is_duplicate_count+= int(is_duplicate)
+	print is_duplicate_count  
+#load_target_values_array()
