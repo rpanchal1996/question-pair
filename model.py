@@ -42,11 +42,23 @@ def load_question_pair():
 	is_same_matrice = np.load('is_same_matrix.npy')
 	if np.sum(question_one_matrice[global_pair_counter]) == 0 or np.sum(question_one_matrice[global_pair_counter])==0:
 		global_pair_counter+=1
+		question_one,question_two,is_same = load_question_pair()
+		return question_one,question_two,is_same
 	else:
-		print question_one_matrice[global_pair_counter]
-		zero_index = question_one_matrice[global_pair_counter].tolist().index(0)
-		print np.roll(question_one_matrice[global_pair_counter],30-zero_index)
+		try:
+			zero_index = question_one_matrice[global_pair_counter].tolist().index(0)
+			question_one = np.roll(question_one_matrice[global_pair_counter],30-zero_index)
+		except ValueError:
+			question_one = question_one_matrice[global_pair_counter]
+
+		try:
+			zero_index = question_two_matrice[global_pair_counter].tolist().index(0)
+			question_one = np.roll(question_two_matrice[global_pair_counter],30-zero_index)
+		except ValueError:
+			question_two = question_two_matrice[global_pair_counter]
+		is_same = is_same_matrice[global_pair_counter]
 		global_pair_counter+=1
 		print global_pair_counter
+		return question_one,question_two,is_same
 for i in xrange(0,5):
 	load_question_pair()
