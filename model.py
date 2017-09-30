@@ -53,6 +53,8 @@ def load_question_pair():
 		#question_one = 
 		question_one = question_one.reshape(question_one.shape[0],-1).T
 		question_two = question_two.reshape(question_two.shape[0],-1).T
+		question_one[question_one==3999999] = 214476 
+		question_two[question_two==3999999] = 214476
 		return question_one,question_two,is_same,error
 
 
@@ -109,16 +111,17 @@ with graph.as_default():
 	d_sqrt = tf.sqrt(d)
 	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
 	loss = 0.5 * tf.reduce_mean(loss)
-	tf.summary.scalar('Loss', loss)
+	
 	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
 	sess = tf.InteractiveSession()
 	saver = tf.train.Saver()
 	sess.run(tf.global_variables_initializer())
 	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
-	writer = tf.summary.FileWriter(logdir, sess.graph)
+	
+	tf.summary.scalar('Loss', loss)
 	merged = tf.summary.merge_all()
-
+	writer = tf.summary.FileWriter(logdir, sess.graph)
 	for iteration_number in xrange(0,100000):
 		question_one,question_two,is_same, error = load_question_pair()
 		if error:
@@ -130,7 +133,7 @@ with graph.as_default():
 				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, i)
 			if iteration_number%100 == 0 and iteration_number !=0:
-				save_path = saver.save(sess, "models/siamese.ckpt", global_step=i)
+				save_path = saver.save(sess, "models/siamese.ckpt", global_step=iteration_number)
 				print("saved to %s" % save_path)
 
 	writer.close()
@@ -140,8 +143,9 @@ with graph.as_default():
 for i in xrange(0,100000):
 	question_one,question_two,is_same,error = load_question_pair()
 	question_one = question_one.reshape(question_one.shape[0],-1).T
-	print question_one.shape
-	print question_two.shape
+	print question_one
+	question_one[question_one==3999999] = 214476 
+	print question_one
 	print is_same.shape
 	#print error
 '''
