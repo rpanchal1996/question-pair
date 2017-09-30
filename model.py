@@ -2,16 +2,50 @@ import numpy as np
 import tensorflow as tf
 import numpy as np
 import json
+import datetime
+
 maxSeqLength = 30
 number_of_examples_to_take = 100000
 global_pair_counter = 0
+
+
 def load_matrices():
 	q1_ids = np.load('q1_ids_matrix.npy')
 	q2_ids = np.load('q2_ids_matrix.npy')
+
 def load_data_saved():
 	with open('stemmed_split_sentences','r') as myfile:
 		data = json.load(myfile)
 	return data
+
+def load_question_pair():
+	global global_pair_counter
+	question_one_matrice = np.load('q1_ids_matrix.npy')
+	question_two_matrice = np.load('q2_ids_matrix.npy')
+	is_same_matrice = np.load('is_same_matrix.npy')
+	if np.sum(question_one_matrice[global_pair_counter]) == 0 or np.sum(question_one_matrice[global_pair_counter])==0:
+		global_pair_counter+=1
+		question_one,question_two,is_same = load_question_pair()
+		return question_one,question_two,is_same
+	else:
+		try:
+			zero_index = question_one_matrice[global_pair_counter].tolist().index(0)
+			question_one = np.roll(question_one_matrice[global_pair_counter],30-zero_index)
+		except ValueError:
+			question_one = question_one_matrice[global_pair_counter]
+
+		try:
+			zero_index = question_two_matrice[global_pair_counter].tolist().index(0)
+			question_one = np.roll(question_two_matrice[global_pair_counter],30-zero_index)
+		except ValueError:
+			question_two = question_two_matrice[global_pair_counter]
+		is_same = is_same_matrice[global_pair_counter]
+		global_pair_counter+=1
+		print global_pair_counter
+		return question_one,question_two,is_same
+
+
+
 #load_matrices()
 
 wordVectors = np.load('word_vectors.npy')
@@ -27,7 +61,7 @@ graph = tf.Graph()
 
 with graph.as_default():
 	with tf.variable_scope('Network') as scope:
-		label = tf.placeholder(tf.int32, [None,1], name='labels')
+		label = tf.placeholder(tf.int32, [None,1], name='label')
 		tf.variable_scope('Inference',reuse=False):
 			input_data_q1 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
 			data_q1 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
@@ -57,36 +91,27 @@ with graph.as_default():
 	d_sqrt = tf.sqrt(d)
 	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
 	loss = 0.5 * tf.reduce_mean(loss)
+	tf.summary.scalar('Loss', loss)
 	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
+sess = tf.InteractiveSession()
+saver = tf.train.Saver()
+sess.run(tf.global_variables_initializer())
+logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+writer = tf.summary.FileWriter(logdir, sess.graph)
+merged = tf.summary.merge_all()
+
+for i in xrange(0,100000):
+	question_one,question_two,is_same = load_question_pair()
+	sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+	if i%50 == 0 and i !=0:
+		summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+		writer.add_summary(summary, i)
+	if i%100 == 0 and i !=0:
+		save_path = saver.save(sess, "models/siamese.ckpt", global_step=i)
+		print("saved to %s" % save_path)
+	
+writer.close()
 
 
 
-
-def load_question_pair():
-	global global_pair_counter
-	question_one_matrice = np.load('q1_ids_matrix.npy')
-	question_two_matrice = np.load('q2_ids_matrix.npy')
-	is_same_matrice = np.load('is_same_matrix.npy')
-	if np.sum(question_one_matrice[global_pair_counter]) == 0 or np.sum(question_one_matrice[global_pair_counter])==0:
-		global_pair_counter+=1
-		question_one,question_two,is_same = load_question_pair()
-		return question_one,question_two,is_same
-	else:
-		try:
-			zero_index = question_one_matrice[global_pair_counter].tolist().index(0)
-			question_one = np.roll(question_one_matrice[global_pair_counter],30-zero_index)
-		except ValueError:
-			question_one = question_one_matrice[global_pair_counter]
-
-		try:
-			zero_index = question_two_matrice[global_pair_counter].tolist().index(0)
-			question_one = np.roll(question_two_matrice[global_pair_counter],30-zero_index)
-		except ValueError:
-			question_two = question_two_matrice[global_pair_counter]
-		is_same = is_same_matrice[global_pair_counter]
-		global_pair_counter+=1
-		print global_pair_counter
-		return question_one,question_two,is_same
-for i in xrange(0,5):
-	load_question_pair()
