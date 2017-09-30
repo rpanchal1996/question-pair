@@ -73,7 +73,7 @@ graph = tf.Graph()
 
 with graph.as_default():
 	with tf.variable_scope('Network') as scope:
-		label = tf.placeholder(tf.int32, [None,1], name='label')
+		label = tf.placeholder(tf.int32, [1], name='label')
 		with tf.variable_scope('Inference',reuse=False):
 			input_data_q1 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
 			data_q1 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
@@ -126,10 +126,10 @@ with graph.as_default():
 		else:
 			print iteration_number
 			sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-			if i%50 == 0 and i !=0:
+			if iteration_number%50 == 0 and iteration_number !=0:
 				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, i)
-			if i%100 == 0 and i !=0:
+			if iteration_number%100 == 0 and iteration_number !=0:
 				save_path = saver.save(sess, "models/siamese.ckpt", global_step=i)
 				print("saved to %s" % save_path)
 
