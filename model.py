@@ -122,6 +122,7 @@ with graph.as_default():
 	tf.summary.scalar('Loss', loss)
 	merged = tf.summary.merge_all()
 	writer = tf.summary.FileWriter(logdir, sess.graph)
+	
 	for iteration_number in xrange(0,100000):
 		question_one,question_two,is_same, error = load_question_pair()
 		if error:
@@ -129,9 +130,9 @@ with graph.as_default():
 		else:
 			print iteration_number
 			sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-			if iteration_number%50 == 0 and iteration_number !=0:
+			if iteration_number%20 == 0 and iteration_number !=0:
 				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-				writer.add_summary(summary, i)
+				writer.add_summary(summary, iteration_number)
 			if iteration_number%100 == 0 and iteration_number !=0:
 				save_path = saver.save(sess, "models/siamese.ckpt", global_step=iteration_number)
 				print("saved to %s" % save_path)
