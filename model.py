@@ -112,16 +112,22 @@ with graph.as_default():
 	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
 	loss = 0.5 * tf.reduce_mean(loss)
 	
-	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
-
-	sess = tf.InteractiveSession()
-	saver = tf.train.Saver()
-	sess.run(tf.global_variables_initializer())
-	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+#	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+#	tf.summary.scalar('Loss', loss)
+#	merged = tf.summary.merge_all()
+#	writer = tf.summary.FileWriter(logdir, sess.graph)
 	
+	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+	sess = tf.InteractiveSession()
+	
+	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 	tf.summary.scalar('Loss', loss)
 	merged = tf.summary.merge_all()
 	writer = tf.summary.FileWriter(logdir, sess.graph)
+	
+	saver = tf.train.Saver()
+	sess.run(tf.global_variables_initializer())
+	
 	
 	for iteration_number in xrange(0,100000):
 		question_one,question_two,is_same, error = load_question_pair()
@@ -129,7 +135,8 @@ with graph.as_default():
 			pass
 		else:
 			print iteration_number
-			sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+			loss_obtained = sess.run([loss], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+			print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
 			if iteration_number%20 == 0 and iteration_number !=0:
 				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, iteration_number)

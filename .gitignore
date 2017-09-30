@@ -10,3 +10,4 @@ q2_ids_matrix.npy
 word_vectors.npy
 tensorboard/
 trial.py
+models/
