@@ -50,6 +50,9 @@ def load_question_pair():
 		global_pair_counter+=1
 		#print global_pair_counter
 		error = 0
+		#question_one = 
+		question_one = question_one.reshape(question_one.shape[0],-1).T
+		question_two = question_two.reshape(question_two.shape[0],-1).T
 		return question_one,question_two,is_same,error
 
 
@@ -136,5 +139,9 @@ with graph.as_default():
 '''
 for i in xrange(0,100000):
 	question_one,question_two,is_same,error = load_question_pair()
-	print error
+	question_one = question_one.reshape(question_one.shape[0],-1).T
+	print question_one.shape
+	print question_two.shape
+	print is_same.shape
+	#print error
 '''
