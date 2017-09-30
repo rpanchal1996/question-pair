@@ -26,14 +26,26 @@ tf.reset_default_graph()
 tf.variable_scope('Inference',reuse=False):
 	input_data_q1 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
 	data_q1 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
-	data_q1 = tf.nn.embedding_lookup(wordVectors,input_data)
+	data_q1 = tf.nn.embedding_lookup(wordVectors,input_data_q1)
+	weights_q1 = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
+	bias_q1 = tf.Variable(tf.constant(0.1, shape=[numClasses]))	
+	lstmCell_1 = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
+	lstmCell_1 = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
+	value_1, _ = tf.nn.dynamic_rnn(lstmCell_1, data_q1, dtype=tf.float32)
+	last_1 = tf.gather(value_1, int(value.get_shape()[0]) - 1)
+	prediction_1 = (tf.matmul(last, weights_q1) + bias_q1)
+tf.variable_scope('Inference',reuse=True):
+	input_data_q2 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
+	data_q2 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
+	data_q2 = tf.nn.embedding_lookup(wordVectors,input_data)
 	weights_q1 = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
 	bias_q1 = tf.Variable(tf.constant(0.1, shape=[numClasses]))	
 	lstmCell = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
 	lstmCell = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
 	value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
 	last = tf.gather(value, int(value.get_shape()[0]) - 1)
-	prediction = (tf.matmul(last, weights_q1) + bias_q1)
+	prediction_2 = (tf.matmul(last, weights_q1) + bias_q1)
+
 
 def load_question_pair():
 	global global_pair_counter
