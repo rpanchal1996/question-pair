@@ -8,3 +8,4 @@ stemmed_split_sentences
 q1_ids_matrix.npy
 q2_ids_matrix.npy
 word_vectors.npy
+tensorboard/

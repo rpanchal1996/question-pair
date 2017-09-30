@@ -25,8 +25,15 @@ def load_question_pair():
 	is_same_matrice = np.load('is_same_matrix.npy')
 	if np.sum(question_one_matrice[global_pair_counter]) == 0 or np.sum(question_one_matrice[global_pair_counter])==0:
 		global_pair_counter+=1
-		question_one,question_two,is_same = load_question_pair()
-		return question_one,question_two,is_same
+		error = 1
+		question_one = question_one_matrice
+		question_two = question_two_matrice
+		is_same = is_same_matrice
+		#global question_one
+		#global question_two
+		#global is_same
+		#question_one,question_two,is_same = load_question_pair()
+		return question_one, question_two, is_same, error
 	else:
 		try:
 			zero_index = question_one_matrice[global_pair_counter].tolist().index(0)
@@ -36,13 +43,14 @@ def load_question_pair():
 
 		try:
 			zero_index = question_two_matrice[global_pair_counter].tolist().index(0)
-			question_one = np.roll(question_two_matrice[global_pair_counter],30-zero_index)
+			question_two = np.roll(question_two_matrice[global_pair_counter],30-zero_index)
 		except ValueError:
 			question_two = question_two_matrice[global_pair_counter]
 		is_same = is_same_matrice[global_pair_counter]
 		global_pair_counter+=1
-		print global_pair_counter
-		return question_one,question_two,is_same
+		#print global_pair_counter
+		error = 0
+		return question_one,question_two,is_same,error
 
 
 
@@ -55,6 +63,7 @@ lstmUnits = 64
 numClasses = 30
 iterations = 100000
 numDimensions = 300
+learning_rate = 0.001
 tf.reset_default_graph()
 
 graph = tf.Graph()
@@ -62,31 +71,37 @@ graph = tf.Graph()
 with graph.as_default():
 	with tf.variable_scope('Network') as scope:
 		label = tf.placeholder(tf.int32, [None,1], name='label')
-		tf.variable_scope('Inference',reuse=False):
+		with tf.variable_scope('Inference',reuse=False):
 			input_data_q1 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
 			data_q1 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
 			data_q1 = tf.nn.embedding_lookup(wordVectors,input_data_q1)
-			weights_q1 = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
-			bias_q1 = tf.Variable(tf.constant(0.1, shape=[numClasses]))	
+			data_q1 = tf.cast(data_q1,tf.float32)
+			#weights_q1 = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
+			#bias_q1 = tf.Variable(tf.constant(0.1, shape=[numClasses]))	
+			weights_q1 = tf.get_variable('weights_q1',[lstmUnits, numClasses],initializer=tf.contrib.layers.xavier_initializer())
+			initialized = tf.constant(0.1, shape=[numClasses])
+			bias_q1 = tf.get_variable('bias_q1',initializer=initialized)
 			lstmCell_1 = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
-			lstmCell_1 = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
+			lstmCell_1 = tf.contrib.rnn.DropoutWrapper(cell=lstmCell_1, output_keep_prob=0.75)
 			value_1, _ = tf.nn.dynamic_rnn(lstmCell_1, data_q1, dtype=tf.float32)
-			last_1 = tf.gather(value_1, int(value.get_shape()[0]) - 1)
+			last_1 = tf.gather(value_1, int(value_1.get_shape()[0]) - 1)
 			prediction_1 = (tf.matmul(last_1, weights_q1) + bias_q1)
 		        
 		scope.reuse_variables()
-		tf.variable_scope('Inference',reuse=True):
+		with tf.variable_scope('Inference',reuse=True):
 			input_data_q2 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
 			data_q2 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
 			data_q2 = tf.nn.embedding_lookup(wordVectors,input_data_q2)
+			data_q2 = tf.cast(data_q2,tf.float32)
 			weights_q2 = tf.get_variable('weights_q1',shape=[lstmUnits, numClasses])
 			bias_q2 = tf.get_variable('bias_q1',shape=[numClasses])	
-			lstmCell_2 = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
-			lstmCell_2 = tf.contrib.rnn.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
-			value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
-			last_2 = tf.gather(value, int(value.get_shape()[0]) - 1)
+			lstmCell_2 = tf.contrib.rnn.BasicLSTMCell(lstmUnits,reuse=tf.get_variable_scope().reuse)
+			lstmCell_2 = tf.contrib.rnn.DropoutWrapper(cell=lstmCell_2, output_keep_prob=0.75)
+			value_2, _ = tf.nn.dynamic_rnn(lstmCell_2, data_q2, dtype=tf.float32)
+			last_2 = tf.gather(value_2, int(value_2.get_shape()[0]) - 1)
 			prediction_2 = (tf.matmul(last_2, weights_q2) + bias_q2)
 	d = tf.reduce_sum(tf.square(prediction_1-prediction_2), 1)
+	label = tf.to_float(label)
 	margin = 0.2
 	d_sqrt = tf.sqrt(d)
 	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
@@ -94,24 +109,32 @@ with graph.as_default():
 	tf.summary.scalar('Loss', loss)
 	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
-sess = tf.InteractiveSession()
-saver = tf.train.Saver()
-sess.run(tf.global_variables_initializer())
-logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
-writer = tf.summary.FileWriter(logdir, sess.graph)
-merged = tf.summary.merge_all()
+	sess = tf.InteractiveSession()
+	saver = tf.train.Saver()
+	sess.run(tf.global_variables_initializer())
+	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+	writer = tf.summary.FileWriter(logdir, sess.graph)
+	merged = tf.summary.merge_all()
 
+	for iteration_number in xrange(0,100000):
+		question_one,question_two,is_same, error = load_question_pair()
+		if error:
+			pass
+		else:
+			print iteration_number
+			sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+			if i%50 == 0 and i !=0:
+				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+				writer.add_summary(summary, i)
+			if i%100 == 0 and i !=0:
+				save_path = saver.save(sess, "models/siamese.ckpt", global_step=i)
+				print("saved to %s" % save_path)
+
+	writer.close()
+
+
+'''
 for i in xrange(0,100000):
-	question_one,question_two,is_same = load_question_pair()
-	sess.run(optimizer, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-	if i%50 == 0 and i !=0:
-		summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-		writer.add_summary(summary, i)
-	if i%100 == 0 and i !=0:
-		save_path = saver.save(sess, "models/siamese.ckpt", global_step=i)
-		print("saved to %s" % save_path)
-	
-writer.close()
-
-
-
+	question_one,question_two,is_same,error = load_question_pair()
+	print error
+'''
