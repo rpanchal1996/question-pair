@@ -105,7 +105,7 @@ with graph.as_default():
 			value_2, _ = tf.nn.dynamic_rnn(lstmCell_2, data_q2, dtype=tf.float32)
 			last_2 = tf.gather(value_2, int(value_2.get_shape()[0]) - 1)
 			prediction_2 = (tf.matmul(last_2, weights_q2) + bias_q2)
-	d = tf.reduce_sum(tf.square(prediction_1-prediction_2), 1)
+	d = tf.reduce_sum(tf.square(prediction_1-prediction_2), 1, keep_dims=True)
 	label = tf.to_float(label)
 	margin = 0.2
 	d_sqrt = tf.sqrt(d)
@@ -121,7 +121,7 @@ with graph.as_default():
 	sess = tf.InteractiveSession()
 	
 	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
-	tf.summary.scalar('Loss', loss)
+	loss_summary = tf.summary.scalar('Loss', loss)
 	merged = tf.summary.merge_all()
 	writer = tf.summary.FileWriter(logdir, sess.graph)
 	
@@ -136,9 +136,11 @@ with graph.as_default():
 		else:
 			print iteration_number
 			loss_obtained = sess.run([loss], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-			print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
+			if iteration_number%50==0:
+				print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
+			
 			if iteration_number%20 == 0 and iteration_number !=0:
-				summary = sess.run(merged, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+				summary = sess.run([loss_summary], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, iteration_number)
 			if iteration_number%100 == 0 and iteration_number !=0:
 				save_path = saver.save(sess, "models/siamese.ckpt", global_step=iteration_number)
