@@ -68,7 +68,7 @@ lstmUnits = 64
 numClasses = 30
 iterations = 100000
 numDimensions = 300
-learning_rate = 0.001
+learning_rate = 0.0001
 tf.reset_default_graph()
 
 graph = tf.Graph()
@@ -106,13 +106,20 @@ with graph.as_default():
 			last_2 = tf.gather(value_2, int(value_2.get_shape()[0]) - 1)
 			prediction_2 = (tf.matmul(last_2, weights_q2) + bias_q2)
 	
+	d = tf.reduce_sum(tf.square(last_1-last_2), 1, keep_dims=True)
+	label = tf.to_float(label)
+	margin = tf.constant(1.0)
+	d_sqrt = tf.sqrt(d)
+	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
+	loss = 0.5 * tf.reduce_mean(loss)
+	'''
 	d = tf.reduce_sum(tf.square(prediction_1-prediction_2), 1, keep_dims=True)
 	label = tf.to_float(label)
 	margin = 0.2
 	d_sqrt = tf.sqrt(d)
 	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
 	loss = 0.5 * tf.reduce_mean(loss)
-
+	'''
 #	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 #	tf.summary.scalar('Loss', loss)
 #	merged = tf.summary.merge_all()
@@ -126,7 +133,7 @@ with graph.as_default():
 	merged = tf.summary.merge_all()
 	writer = tf.summary.FileWriter(logdir, sess.graph)
 	
-	saver = tf.train.Saver()
+	saver = tf.train.Saver(max_to_keep=1)
 	sess.run(tf.global_variables_initializer())
 	
 	
@@ -140,10 +147,10 @@ with graph.as_default():
 			if iteration_number%50==0:
 				print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
 			
-			if iteration_number%20 == 0 and iteration_number !=0:
+			if iteration_number%50 == 0 and iteration_number !=0:
 				summary = sess.run(loss_summary, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, iteration_number)
-			if iteration_number%100 == 0 and iteration_number !=0:
+			if iteration_number%500 == 0 and iteration_number !=0:
 				save_path = saver.save(sess, "models/siamese.ckpt", global_step=iteration_number)
 				print("saved to %s" % save_path)
 
