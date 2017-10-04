@@ -11,3 +11,4 @@ word_vectors.npy
 tensorboard/
 trial.py
 models/
+oldtf/
