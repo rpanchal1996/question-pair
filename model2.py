@@ -7,6 +7,7 @@ import datetime
 maxSeqLength = 30
 number_of_examples_to_take = 100000
 global_pair_counter = 0
+total_global_index_counter = 0
 
 
 def load_matrices():
@@ -28,7 +29,7 @@ def load_question_pair():
 	question_one_batches = []
 	question_two_batches = []
 	is_same_batches = []
-	while added<8:
+	while added<20:
 		if np.sum(question_one_matrice[global_pair_counter]) == 0 or np.sum(question_one_matrice[global_pair_counter])==0 or len(is_same_matrice[global_pair_counter])>1:
 			global_pair_counter+=1
 			error = 1
@@ -58,21 +59,14 @@ def load_question_pair():
 			question_two_batches.append(question_two.flatten().tolist())
 			is_same_batches.append(is_same)
 			added+=1
-
-			#print question_one.shape
-			#print question_two.shape
-			#print is_same.shape
-	#return question_one,question_two,is_same,error
 	question_one_final = np.array(question_one_batches)
 	question_two_final = np.array(question_two_batches)
 	is_same_final = np.array(is_same_batches)
-	#print question_one_final.shape
-	#print question_two_final.shape
-	#print is_same_final.shape
 	return question_one_final,question_two_final,is_same_final
+
 wordVectors = np.load('word_vectors.npy')
 print wordVectors.shape
-batchSize = 8
+batchSize = 20
 lstmUnits = 64
 numClasses = 30
 iterations = 100000
@@ -172,24 +166,25 @@ with graph.as_default():
 	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 	loss_summary = tf.summary.scalar('Loss', final_loss)
 	merged = tf.summary.merge_all()
-	writer = tf.summary.FileWriter(logdir, sess.graph)
-	
+	#writer = tf.summary.FileWriter(logdir, sess.graph)
+	writer = tf.summary.FileWriter(logdir)
 	saver = tf.train.Saver(max_to_keep=1)
 	sess.run(tf.global_variables_initializer())
 	
-	
-	for iteration_number in xrange(0,100000):
-		question_one,question_two,is_same = load_question_pair()
-		print iteration_number
-		loss_obtained = sess.run([final_loss], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-		if iteration_number%20==0:
-			print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
-		
-		if iteration_number%50 == 0 and iteration_number !=0:
-			summary = sess.run(loss_summary, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
-			writer.add_summary(summary, iteration_number)
-		if iteration_number%20000 == 0 and iteration_number !=0:
-			save_path = saver.save(sess, "models/siamese.ckpt", global_step=iteration_number)
-			print("saved to %s" % save_path)
-
+	for epoch in xrange(0,20):
+		for iteration_number in xrange(0,4900):
+			total_global_index_counter+=1
+			question_one,question_two,is_same = load_question_pair()
+			loss_obtained = sess.run([final_loss], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+			if iteration_number%100==0:
+				print 'LOSS AT STEP ' + str(iteration_number) + ' IS == ' +str(loss_obtained)
+			if iteration_number%25 == 0 and iteration_number !=0:
+				summary = sess.run(loss_summary, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
+				writer.add_summary(summary, total_global_index_counter)
+				print 'SAVING TO TENSORBOARD'
+			if iteration_number%1000 == 0 and iteration_number !=0:
+				save_path = saver.save(sess, "models/siamese.ckpt", global_step=total_global_index_counter)
+				print("saved to %s" % save_path)
+		global_pair_counter = 0
+		print ' EPOCH DONE == ' + str(epoch)
 	writer.close()
