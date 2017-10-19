@@ -1,6 +1,12 @@
-# Similar sentence identification
+# Sentence Pair Detector
 
-  A siamese LSTM based approach to [quora question pair challenge](https://www.kaggle.com/c/quora-question-pairs) on Kaggle. 
+  A siamese LSTM based approach to indentifying similar sentences/question. Built for the [quora question pair challenge](https://www.kaggle.com/c/quora-question-pairs) on Kaggle, but can be trained on any similar-sentence dataset. 
+### Word Embeddings: 
+The word embeddings that I used were the [ConceptNet Numberbatch](https://github.com/commonsense/conceptnet-numberbatch) embeddings. I used them mainly for their small size, but can be switched out for any other word embeddings. I would personally recommend using [Google's Word2Vec](https://code.google.com/archive/p/word2vec/) pretrained vectors.
+### Preprocessing:
+I cleaned the dataset to remove sentence contractions. I used the list of contractions given by [lystdo](https://www.kaggle.com/lystdo) on Kaggle. Standard preprocessing tasks like removing outliers in terms of size and stemming was done. 
+### Model:
+I used stacked LSTM cells with tied weights and dropout. The loss function is Yann LeCun's [Contrastive Loss Function](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf). The optimizer is Adam. 
 
-The word embeddings that I used were the [ConceptNet Numberbatch](https://github.com/commonsense/conceptnet-numberbatch) embeddings. I used them mainly for their small size. 
-I have used two LSTMs with tied weights and a contrastive loss function to train the model. 
+ 
+
