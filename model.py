@@ -4,7 +4,6 @@ import numpy as np
 import json
 import datetime
 from tensorflow.python.ops import variable_scope as vs
-#import tf.rnn
 maxSeqLength = 30
 number_of_examples_to_take = 100000
 global_pair_counter = 0
@@ -160,7 +159,7 @@ with graph.as_default():
 			if iteration_number%25 == 0 and iteration_number !=0:
 				summary = sess.run(loss_summary, {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
 				writer.add_summary(summary, total_global_index_counter)
-				print 'SAVING TO TENSORBOARD'
+				#print 'SAVING TO TENSORBOARD'
 			if iteration_number%1000 == 0 and iteration_number !=0:
 				save_path = saver.save(sess, "models/siamese.ckpt", global_step=total_global_index_counter)
 				print("saved to %s" % save_path)
