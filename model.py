@@ -3,11 +3,29 @@ import tensorflow as tf
 import numpy as np
 import json
 import datetime
-
+from tensorflow.python.ops import variable_scope as vs
+#import tf.rnn
 maxSeqLength = 30
 number_of_examples_to_take = 100000
 global_pair_counter = 0
 total_global_index_counter = 0
+
+
+def verbose(original_function):
+	def new_function(*args, **kwargs):
+		print('get variable:', '/'.join((tf.get_variable_scope().name, args[0])))
+		result = original_function(*args, **kwargs)
+		return result
+	return new_function
+
+vs.get_variable = verbose(vs.get_variable)
+
+def create_lstm_multicell(name):
+	def lstm_cell(i, s):
+		print('creating cell %i in %s' % (i, s))
+		return rnn.LSTMCell(nstates, reuse=tf.get_variable_scope().reuse)
+	lstm_multi_cell = rnn.MultiRNNCell([lstm_cell(i, name) for i in range(n_layers)])
+	return lstm_multi_cell
 
 
 def load_matrices():
@@ -77,88 +95,49 @@ keep_prob = 0.75
 graph = tf.Graph()
 lstm_layers = 3
 with graph.as_default():
+	
+	def create_lstm_multicell(name,n_layers,nstates):
+		def lstm_cell(i, s):
+			print('creating cell %i in %s' % (i, s))
+			return tf.contrib.rnn.LSTMCell(nstates, reuse=tf.get_variable_scope().reuse)
+		lstm_multi_cell = tf.contrib.rnn.MultiRNNCell([lstm_cell(i, name) for i in range(n_layers)])
+		return lstm_multi_cell
+	
 	label = tf.placeholder(tf.int32, [batchSize,1], name='label')
+	
 	with tf.variable_scope('Inference',reuse=False):
 		input_data_q1 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
-		#data_q1 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
-		cells=[]
 		data_q1 = tf.nn.embedding_lookup(wordVectors,input_data_q1)
 		data_q1 = tf.cast(data_q1,tf.float32)
-		lstmCell_1 = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
-		for _ in range(lstmUnits):
-			question1_drop = tf.contrib.rnn.DropoutWrapper(lstmCell_1, output_keep_prob=keep_prob)
-			cells.append(question1_drop)
-		question1_multi_lstm = tf.contrib.rnn.MultiRNNCell(cells)
-		#question1_multi_lstm = tf.contrib.rnn.MultiRNNCell([question1_drop for _ in range(lstm_layers)])
+		question1_multi_lstm = create_lstm_multicell('lstm1',lstm_layers,lstmUnits)
 		q1_initial_state = question1_multi_lstm.zero_state(batchSize, tf.float32)
 		question1_outputs, question1_final_state = tf.nn.dynamic_rnn(question1_multi_lstm, data_q1, initial_state=q1_initial_state)
-			
-	#scope.reuse_variables()
 	with tf.variable_scope('Inference',reuse=True) as scope:
 		scope.reuse_variables()
 		input_data_q2 = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
-		#data_q2 = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
 		data_q2 = tf.nn.embedding_lookup(wordVectors,input_data_q2)
 		data_q2 = tf.cast(data_q2,tf.float32)
-		lstmCell_2 = tf.contrib.rnn.BasicLSTMCell(lstmUnits)
-		cells = []
-		for _ in range(lstmUnits):
-			question2_drop = tf.contrib.rnn.DropoutWrapper(lstmCell_2, output_keep_prob=keep_prob)
-			cells.append(question2_drop)
-		#question2_drop = tf.contrib.rnn.DropoutWrapper(lstmCell_2, output_keep_prob=keep_prob)
-		question2_multi_lstm = tf.contrib.rnn.MultiRNNCell(cells)
+		question2_multi_lstm = create_lstm_multicell('lstm2',lstm_layers,lstmUnits)
 		q2_initial_state = question2_multi_lstm.zero_state(batchSize, tf.float32)
 		question2_outputs, question2_final_state = tf.nn.dynamic_rnn(question2_multi_lstm, data_q2, initial_state=q2_initial_state)
 
-
-	#LOSS ATTEMPT 4
-	
+	'''
 	diff = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(question1_outputs[:, -1, :], question2_outputs[:, -1, :])), reduction_indices=1))
-
 	margin = tf.constant(1.) 
 	labels = tf.to_float(label)
 	match_loss = tf.expand_dims(tf.square(diff, 'match_term'), 0)
-	
 	mismatch_loss = tf.expand_dims(tf.maximum(0., tf.subtract(margin, tf.square(diff)), 'mismatch_term'), 0)
-
 	loss = tf.add(tf.matmul(labels, match_loss), tf.matmul((1 - labels), mismatch_loss), 'loss_add')
 	final_loss = tf.reduce_mean(loss)
-	
-	# LOSS FUNCTION ATTEMPT 3
 	'''
-	diff = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(question1_outputs, question2_outputs)), reduction_indices=1, keep_dims=True))
-	margin = tf.constant(1.0) 
+	margin = tf.constant(1.) 
 	labels = tf.to_float(label)
-	match_loss = tf.expand_dims(tf.square(diff, 'match_term'), 0)
-	mismatch_loss = tf.expand_dims(tf.maximum(0., tf.subtract(margin, tf.square(diff)), 'mismatch_term'), 0)
-	loss = tf.add(tf.matmul(labels, match_loss), tf.matmul((1 - labels), mismatch_loss), 'loss_add')
+	
+	d = tf.reduce_sum(tf.square(tf.subtract(question1_outputs, question2_outputs)), 1, keep_dims=True)
+	d_sqrt = tf.sqrt(d)
+	loss = labels * tf.square(tf.maximum(0.0, margin - d_sqrt)) + (1 - labels) * d
 	final_loss = tf.reduce_mean(loss)
-	'''
-	'''
-	#LOSS FUNCTION ATTEMPT 2
-	d = tf.reduce_sum(tf.square(question1_outputs-question2_outputs), 1)
-	label = tf.to_float(label)
-	margin = tf.constant(1.0)
-	d_sqrt = tf.sqrt(d)
-	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
-	final_loss = 0.5 * tf.reduce_mean(loss)
-	'''
-	
-	
-	
-	# LOSS FUNCTION ATTEMPT 1
-	'''
-	d = tf.reduce_sum(tf.square(prediction_1-prediction_2), 1, keep_dims=True)
-	label = tf.to_float(label)
-	margin = 0.2
-	d_sqrt = tf.sqrt(d)
-	loss = label * tf.square(tf.maximum(0., margin - d_sqrt)) + (1 - label) * d
-	loss = 0.5 * tf.reduce_mean(loss)
-	'''
-#	logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
-#	tf.summary.scalar('Loss', loss)
-#	merged = tf.summary.merge_all()
-#	writer = tf.summary.FileWriter(logdir, sess.graph)
+
 	
 	optimizer = tf.train.AdamOptimizer(learning_rate).minimize(final_loss)
 	sess = tf.InteractiveSession()
