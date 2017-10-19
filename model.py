@@ -94,7 +94,7 @@ keep_prob = 0.75
 graph = tf.Graph()
 lstm_layers = 3
 with graph.as_default():
-	
+	#The following function was taken from a StackOverflow answer: https://stackoverflow.com/questions/44769200/how-do-i-share-weights-across-different-rnn-cells-that-feed-in-different-inputs
 	def create_lstm_multicell(name,n_layers,nstates):
 		def lstm_cell(i, s):
 			print('creating cell %i in %s' % (i, s))

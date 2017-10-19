@@ -12,3 +12,4 @@ tensorboard/
 trial.py
 models/
 oldtf/
+is_same_matrix.npy

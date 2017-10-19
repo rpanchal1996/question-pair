@@ -16,6 +16,7 @@ I used stacked LSTM cells with tied weights and dropout. The two sentences/quest
  - Remove redundant one-time use functions
  - Add option for other optimizers and GRU cells
  - Add credits for resources used
+ - ADD COMMENTS
 
  
 
