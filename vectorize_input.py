@@ -6,15 +6,15 @@ import json
 import sys
 maxSeqLength = 30
 ps = PorterStemmer()
-
 def load_data_saved():
 	with open('stemmed_split_sentences','r') as myfile:
 		data = json.load(myfile)
 	return data
 
 def load_data():
-	file_path = '/home/rudresh/Desktop/quora/train.csv'
-	#file_path = sys.argv[1]
+	#file_path = '/home/rudresh/Desktop/quora/train.csv'
+	print 'CLEANING, TOKENIZING AND STEMMING THE TRAINING DATASET'
+	file_path = sys.argv[1]	
 	csv_dataframe  = pd.read_csv(file_path)
 	csv_dataframe = csv_dataframe[['question1','question2','is_duplicate']]
 	question1 = []
@@ -36,7 +36,6 @@ def load_data():
 			question2.append(question2_words)
 			is_duplicate.append(row['is_duplicate'])
 	zipped_object = zip(question1,question2,is_duplicate)
-	
 	with open('stemmed_split_sentences','w') as myfile:
 		json.dump(zipped_object,myfile)
 	
@@ -73,7 +72,9 @@ def clean_text(text):
 	text = re.sub(r"\s{2,}", " ", text)
 	return text
 
+#The function below converts text into vectors of words
 def vectorize():
+	print 'VECTORIZING THE INPUT OF THE TWO QUESTIONS'
 	wordlist = []
 	known = 0
 	unkown = 0
@@ -89,16 +90,18 @@ def vectorize():
 	
 	for question1_words,question2_words,is_duplicate in zipped_data:
 		wordcounter = 0
+		'''
 		print question1_words
 		print question2_words
 		print example_counter
+		'''
 		for word in question1_words:
 			try:
 				question_one_ids[example_counter][wordcounter] = wordlist.index(word)
 				known+=1
 				wordcounter+=1
 			except ValueError:								     
-				question_one_ids[example_counter][wordcounter] = 3999999 #Vector for unkown words
+				question_one_ids[example_counter][wordcounter] = 3999999 
 				wordcounter+=1
 				unkown+=1
 		wordcounter = 0
@@ -108,14 +111,17 @@ def vectorize():
 				known+=1
 				wordcounter+=1
 			except ValueError:								     
-				question_two_ids[example_counter][wordcounter] = 3999999 #Vector for unkown words
+				question_two_ids[example_counter][wordcounter] = 3999999 
 				wordcounter+=1
 				unkown+=1
 		example_counter+=1
-		if example_counter % 10 == 0:
-			print 'NUMBER OF EXAMPLES DONE === ' + str(example_counter)
-			print 'TOTAL NUMBER OF SHIT    === ' + str(number_of_examples) 
+		if example_counter % 100 == 0:
+			print ' '
+			print 'NUMBER OF SENTENCE PAIRS DONE === ' + str(example_counter)
+			print 'TOTAL NUMBER OF SHIT LEFT   === ' + str(number_of_examples-example_counter) 
+			print ' '
 		if example_counter % 2000 == 0 :
+			print ' SAVING THE COMPUTED VECTORS AT STEP == ' + str(example_counter)
 			np.save('q1_ids_matrix',question_one_ids)
 			np.save('q2_ids_matrix',question_two_ids)
 
@@ -156,5 +162,8 @@ def load_target_values_array():
 	for _,_,is_duplicate in zipped_object:
 		is_duplicate_count+= int(is_duplicate)
 	print is_duplicate_count  
-#load_target_values_array()
-#load_data()
+
+
+load_data()
+vectorize()
+generate_target_values_array()
