@@ -19,14 +19,6 @@ def verbose(original_function):
 
 vs.get_variable = verbose(vs.get_variable)
 
-def create_lstm_multicell(name):
-	def lstm_cell(i, s):
-		print('creating cell %i in %s' % (i, s))
-		return rnn.LSTMCell(nstates, reuse=tf.get_variable_scope().reuse)
-	lstm_multi_cell = rnn.MultiRNNCell([lstm_cell(i, name) for i in range(n_layers)])
-	return lstm_multi_cell
-
-
 def load_matrices():
 	q1_ids = np.load('q1_ids_matrix.npy')
 	q2_ids = np.load('q2_ids_matrix.npy')
