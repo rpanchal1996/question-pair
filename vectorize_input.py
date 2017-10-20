@@ -3,8 +3,10 @@ from nltk.stem.porter import PorterStemmer
 import re
 import numpy as np
 import json
+import sys
 maxSeqLength = 30
 ps = PorterStemmer()
+
 def load_data_saved():
 	with open('stemmed_split_sentences','r') as myfile:
 		data = json.load(myfile)
@@ -12,6 +14,7 @@ def load_data_saved():
 
 def load_data():
 	file_path = '/home/rudresh/Desktop/quora/train.csv'
+	#file_path = sys.argv[1]
 	csv_dataframe  = pd.read_csv(file_path)
 	csv_dataframe = csv_dataframe[['question1','question2','is_duplicate']]
 	question1 = []
@@ -33,6 +36,7 @@ def load_data():
 			question2.append(question2_words)
 			is_duplicate.append(row['is_duplicate'])
 	zipped_object = zip(question1,question2,is_duplicate)
+	
 	with open('stemmed_split_sentences','w') as myfile:
 		json.dump(zipped_object,myfile)
 	
@@ -153,3 +157,4 @@ def load_target_values_array():
 		is_duplicate_count+= int(is_duplicate)
 	print is_duplicate_count  
 #load_target_values_array()
+#load_data()

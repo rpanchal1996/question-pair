@@ -2,8 +2,11 @@
 from nltk.stem.porter import PorterStemmer
 import json
 import re
+import sys
 ps = PorterStemmer()
-path_to_vectors = '/home/rudresh/Desktop/quora/numberbatch-en.txt'
+#path_to_vectors = '/home/rudresh/Desktop/quora/numberbatch-en.txt'
+path_to_vectors = sys.argv[1]
+
 def dump_stemmed(filepath):
 	vectors = []
 	with open(filepath,'r') as myfile:
@@ -19,11 +22,9 @@ def dump_stemmed(filepath):
 				pass
 			else:
 				word_vector_dict[word] = vector
-
 	with open('stemmed_vectors','w') as myfile:
 		json.dump(word_vector_dict,myfile)
-filename = 'stemmed_vectors'
-		
+
 def generate_in_correct_format(filename):
 	word_vector_dict = {}
 	with open(filename,'r') as myfile:
@@ -37,7 +38,7 @@ def generate_in_correct_format(filename):
 
 #generate_in_correct_format(filename)
 
-def clean_vectors(filename):
+def clean_vectors():
 	ctr = 0
 	with open('final_vectors','r') as myfile:
 		vectors = myfile.readlines()
@@ -53,3 +54,9 @@ def generate_word_list(filename_of_vectors):
 		word = vector.split()[0] + '\n'
 		with open('wordlist','a') as myfile:
 			myfile.write(word)
+
+dump_stemmed(path_to_vectors)
+filename = 'stemmed_vectors'
+generate_in_correct_format(filename)
+clean_vectors()
+generate_word_list('final_clean_vectors')
