@@ -6,6 +6,7 @@ import sys
 ps = PorterStemmer()
 #path_to_vectors = '/home/rudresh/Desktop/quora/numberbatch-en.txt'
 path_to_vectors = sys.argv[1]
+import numpy as np
 
 def dump_stemmed(filepath):
 	vectors = []
@@ -54,9 +55,26 @@ def generate_word_list(filename_of_vectors):
 		word = vector.split()[0] + '\n'
 		with open('wordlist','a') as myfile:
 			myfile.write(word)
+def create_vector_matrix():
+	with open('final_clean_vectors','r') as myfile:
+		vectors = myfile.readlines()
+		vectors = [vector.strip() for vector in vectors]
+	number_of_vectors = len(vectors)
+	ids = np.zeros((number_of_vectors, 300), dtype='float32')
+	print ids.shape
+	final_vectors = []
+	for vector in vectors:
+		values = vector.split()[1:]
+		values = [float(value) for value in values]
+		final_vectors.append(values)
+	final_numpy_array = np.array(final_vectors)
+	print final_numpy_array.shape
+	np.save('word_vectors',final_numpy_array)
+
 
 dump_stemmed(path_to_vectors)
 filename = 'stemmed_vectors'
 generate_in_correct_format(filename)
 clean_vectors()
 generate_word_list('final_clean_vectors')
+create_vector_matrix()
