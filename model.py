@@ -85,6 +85,8 @@ tf.reset_default_graph()
 keep_prob = 0.75
 graph = tf.Graph()
 lstm_layers = 3
+number_of_epochs = 20
+total_number_of_iterations = int(number_of_examples_to_take/batchSize)-1
 with graph.as_default():
 	#The following function was taken from a StackOverflow answer: https://stackoverflow.com/questions/44769200/how-do-i-share-weights-across-different-rnn-cells-that-feed-in-different-inputs
 	def create_lstm_multicell(name,n_layers,nstates):
@@ -141,8 +143,8 @@ with graph.as_default():
 	saver = tf.train.Saver(max_to_keep=1)
 	sess.run(tf.global_variables_initializer())
 	
-	for epoch in xrange(0,20):
-		for iteration_number in xrange(0,4900):
+	for epoch in xrange(0,number_of_epochs):
+		for iteration_number in xrange(0,total_number_of_iterations):
 			total_global_index_counter+=1
 			question_one,question_two,is_same = load_question_pair()
 			loss_obtained = sess.run([final_loss], {input_data_q1: question_one, input_data_q2:question_two,label:is_same})
